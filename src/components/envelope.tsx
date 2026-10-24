@@ -14,9 +14,9 @@ const LETTER_PARAGRAPHS = [
   "Od 5 lat jesteś moim crushem",
   "Życzę Ci, aby kolejne lata upływały nam tak jak te które są za nami",
   "Kocham Cię każdego dnia coraz mocniej",
-  "mam dla Ciebie prezent...",
+  "Otwórz schowek w aucie przed sobą",
 ];
-const SIGNATURE = "Twój Rafał";
+const SIGNATURE = "Twój misiuń 🐻";
 const MESSAGE = [...LETTER_PARAGRAPHS, SIGNATURE].join("\n\n");
 const smooth = (value: number) => {
   const t = Math.max(0, Math.min(1, value));
@@ -39,36 +39,36 @@ function paperTexture() {
   ctx.strokeRect(65, 65, 894, 894);
   ctx.strokeRect(78, 78, 868, 868);
   ctx.textAlign = "center";
-  ctx.fillStyle = "#997849";
-  ctx.font = "22px sans-serif";
-  ctx.fillText("TYLKO DLA CIEBIE", 512, 170);
-  ctx.fillStyle = "#682c3b";
-  ctx.font = "italic 46px Georgia";
-  let y = 270;
+  ctx.fillStyle = "#000000";
+  ctx.font = "32px Georgia";
+  ctx.fillText("Mój Misiaku", 512, 150);
+  ctx.fillStyle = "#000000";
+  ctx.font = "54px Georgia";
+  let y = 220;
   LETTER_PARAGRAPHS.forEach((paragraph) => {
     let line = "";
     for (const word of paragraph.split(" ")) {
       const candidate = line ? `${line} ${word}` : word;
-      if (line && ctx.measureText(candidate).width > 780) {
+      if (line && ctx.measureText(candidate).width > 810) {
         ctx.fillText(line, 512, y);
-        y += 60;
+        y += 64;
         line = word;
       } else {
         line = candidate;
       }
     }
     ctx.fillText(line, 512, y);
-    y += 92;
+    y += 84;
   });
   ctx.textAlign = "right";
-  ctx.font = "italic 48px Georgia";
-  ctx.fillText(SIGNATURE, 875, 875);
+  ctx.font = "italic 56px Georgia, 'Apple Color Emoji', 'Segoe UI Emoji', serif";
+  ctx.fillText(SIGNATURE, 875, 900);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   return texture;
 }
 
-export default function Envelope() {
+export default function Envelope({ onDismiss }: { onDismiss: () => void }) {
   const mountRef = useRef<HTMLDivElement>(null);
   const openedRef = useRef(false);
   const [opened, setOpened] = useState(false);
@@ -100,7 +100,7 @@ export default function Envelope() {
     event.preventDefault();
     // Date inputs return an ISO date, independent of the displayed locale.
     if (selectedDate !== "2021-10-26") {
-      setDateError("To chyba nie ten dzień. Spróbuj jeszcze raz, moja rybko.");
+      setDateError("To chyba nie ten dzień. Spróbuj jeszcze raz.");
       dateRef.current?.focus();
       return;
     }
@@ -589,7 +589,9 @@ export default function Envelope() {
       ) {
         event.preventDefault();
         resetView();
-        if (event.key === "Escape" || openedRef.current) {
+        if (openedRef.current) {
+          onDismiss();
+        } else if (event.key === "Escape") {
           openedRef.current = false;
           setOpened(false);
         } else {
@@ -734,7 +736,7 @@ export default function Envelope() {
       renderer.dispose();
       renderer.domElement.remove();
     };
-  }, [requestOpen]);
+  }, [requestOpen, onDismiss]);
 
   return (
     <main>
@@ -743,6 +745,16 @@ export default function Envelope() {
         aria-label="Interaktywna koperta z niespodzianką"
       >
         <div ref={mountRef} className="envelope-canvas" />
+        {opened && (
+          <button
+            type="button"
+            className="letter-close"
+            aria-label="Zamknij list i przejdź do galerii zdjęć"
+            onClick={onDismiss}
+          >
+            ZAMKNIJ LIST <span aria-hidden="true">×</span>
+          </button>
+        )}
         {fallback && (
           <button
             className="fallback-envelope"
@@ -750,8 +762,7 @@ export default function Envelope() {
             aria-expanded={opened}
             onClick={() => {
               if (openedRef.current) {
-                openedRef.current = false;
-                setOpened(false);
+                onDismiss();
               } else {
                 requestOpen();
               }
@@ -802,7 +813,7 @@ export default function Envelope() {
               {dateError}
             </p>
             <button type="submit" className="date-submit">
-              Otwórz kopertę
+              OTWÓRZ KOPERTĘ
             </button>
           </form>
         </dialog>

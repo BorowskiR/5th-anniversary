@@ -21,14 +21,7 @@ function heartGeometry(radius: number) {
   return new THREE.BufferGeometry().setFromPoints(vertices);
 }
 
-/** Outline hearts and a diffuse light pool share the renderer behind the letter. */
-export function createAmbientBackground(scene: THREE.Scene, envelope: THREE.Group) {
-  const group = new THREE.Group();
-  scene.add(group);
-  const cursor = new THREE.Vector2();
-  let influence = 0;
-  let elapsed = 0;
-
+function createEnvelopeLighting(group: THREE.Group, envelope: THREE.Group) {
   const glowCanvas = document.createElement("canvas");
   glowCanvas.width = glowCanvas.height = 256;
   const ctx = glowCanvas.getContext("2d")!;
@@ -60,6 +53,38 @@ export function createAmbientBackground(scene: THREE.Scene, envelope: THREE.Grou
   const bounceLight = new THREE.PointLight("#e5d3c5", 0.4, 6, 2);
   group.add(bounceLight);
   const lightOffset = new THREE.Vector2();
+
+  return {
+    update(camera: THREE.PerspectiveCamera, elapsed: number, dt: number, reducedMotion: boolean) {
+      const lightDamping = reducedMotion ? 1 : 1 - Math.exp(-dt * 4);
+      const targetX = reducedMotion ? 0 : Math.sin(envelope.rotation.y) * 0.38 + Math.sin(envelope.rotation.z) * 0.12;
+      const targetY = reducedMotion ? 0 : Math.sin(envelope.rotation.x) * 0.18;
+      lightOffset.x = THREE.MathUtils.lerp(lightOffset.x, targetX, lightDamping);
+      lightOffset.y = THREE.MathUtils.lerp(lightOffset.y, targetY, lightDamping);
+      const breath = reducedMotion ? 0 : Math.sin(elapsed * 0.8) * 0.002;
+      lightPool.position.set(envelope.position.x + lightOffset.x, envelope.position.y - 1.72 + lightOffset.y, -1.4);
+      lightPool.rotation.z = lightOffset.x * 0.08;
+      lightPool.scale.x = 7.2 - Math.abs(lightOffset.x) * 0.6;
+      poolMaterial.opacity = 0.025 + breath;
+      halo.update(camera, envelope, 0.18 + breath * 3);
+      bounceLight.position.set(envelope.position.x + lightOffset.x, envelope.position.y - 1.9 + lightOffset.y, 1);
+    },
+    dispose() {
+      glowTexture.dispose();
+      bounceLight.dispose();
+    },
+  };
+}
+
+/** Shared interactive hearts, with backlighting when an envelope is provided. */
+export function createAmbientBackground(scene: THREE.Scene, envelope?: THREE.Group) {
+  const group = new THREE.Group();
+  scene.add(group);
+  const cursor = new THREE.Vector2();
+  let influence = 0;
+  let elapsed = 0;
+
+  const lighting = envelope ? createEnvelopeLighting(group, envelope) : null;
 
   const hearts: DriftingHeart[] = [];
   for (let i = 0; i < 26; i++) {
@@ -135,18 +160,7 @@ export function createAmbientBackground(scene: THREE.Scene, envelope: THREE.Grou
         pulse.object.scale.setScalar(0.08 + pulse.age * 1.1);
         pulse.object.material.opacity = Math.pow(1 - pulse.age / 1.6, 2) * 0.25;
       });
-      const lightDamping = reducedMotion ? 1 : 1 - Math.exp(-dt * 4);
-      const targetX = reducedMotion ? 0 : Math.sin(envelope.rotation.y) * 0.38 + Math.sin(envelope.rotation.z) * 0.12;
-      const targetY = reducedMotion ? 0 : Math.sin(envelope.rotation.x) * 0.18;
-      lightOffset.x = THREE.MathUtils.lerp(lightOffset.x, targetX, lightDamping);
-      lightOffset.y = THREE.MathUtils.lerp(lightOffset.y, targetY, lightDamping);
-      const breath = reducedMotion ? 0 : Math.sin(elapsed * 0.8) * 0.002;
-      lightPool.position.set(envelope.position.x + lightOffset.x, envelope.position.y - 1.72 + lightOffset.y, -1.4);
-      lightPool.rotation.z = lightOffset.x * 0.08;
-      lightPool.scale.x = 7.2 - Math.abs(lightOffset.x) * 0.6;
-      poolMaterial.opacity = 0.025 + breath;
-      halo.update(camera, envelope, 0.18 + breath * 3);
-      bounceLight.position.set(envelope.position.x + lightOffset.x, envelope.position.y - 1.9 + lightOffset.y, 1);
+      lighting?.update(camera, elapsed, dt, reducedMotion);
     },
     dispose() {
       const geometries = new Set<THREE.BufferGeometry>();
@@ -159,8 +173,7 @@ export function createAmbientBackground(scene: THREE.Scene, envelope: THREE.Grou
       });
       geometries.forEach((geometry) => geometry.dispose());
       materials.forEach((material) => material.dispose());
-      glowTexture.dispose();
-      bounceLight.dispose();
+      lighting?.dispose();
       group.removeFromParent();
     },
   };
