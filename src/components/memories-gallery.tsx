@@ -6,6 +6,7 @@ import { A11y, Keyboard, Navigation, Pagination } from "swiper/modules";
 import { Swiper, SwiperSlide } from "swiper/react";
 import type { GalleryPhoto } from "@/lib/gallery";
 import HeartsBackground from "./hearts-background";
+import PhotoBackdrop from "./photo-backdrop";
 import "swiper/css";
 import "swiper/css/navigation";
 import "swiper/css/pagination";
@@ -20,6 +21,7 @@ export default function MemoriesGallery({ photos }: { photos: GalleryPhoto[] }) 
 
   return (
     <main className="memories-gallery" aria-labelledby="gallery-title">
+      <PhotoBackdrop />
       <HeartsBackground />
       <div className="gallery-content">
         <header className="gallery-header">

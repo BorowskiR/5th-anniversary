@@ -10,11 +10,12 @@ import {
 import * as THREE from "three";
 import Image from "next/image";
 import { createAmbientBackground } from "./ambient-background";
+import PhotoBackdrop from "./photo-backdrop";
 
 const LETTER_PARAGRAPHS = [
   "Od pięciu lat jesteś moja, wiem, że zawsze już będziesz ❤️",
   "Życzę Nam, aby kolejne lata mijały tak cudownie, jak te które są już za nami",
-  "Kocham Cię każdego dnia coraz mocniej",
+  "Każdego dnia Kocham Cię coraz bardziej ❤️",
 ];
 const SIGNATURE = "Twój Rafał 🐻";
 const GREETING = "Karola";
@@ -796,6 +797,7 @@ export default function Envelope({ onDismiss }: { onDismiss: () => void }) {
         className="surprise"
         aria-label="Interaktywna koperta z niespodzianką"
       >
+        <PhotoBackdrop hidden={opened} />
         <div ref={mountRef} className="envelope-canvas" />
         {opened && (
           <button
