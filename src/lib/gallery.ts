@@ -29,6 +29,7 @@ export async function getAnniversaryPhotos(): Promise<GalleryPhoto[]> {
 
   return files
     .filter((file) => /\.(jpe?g|png|webp|avif|gif)$/i.test(file))
+    .filter((file) => file !== "20211101_201735.jpg")
     .map((file) => {
       const compact = file.match(/(?:^|\D)(\d{4})(\d{2})(\d{2})(?!\d)/);
       const dotted = file.match(/(?:^|\D)(\d{2})\.(\d{2})\.(\d{4}|\d{2})(?!\d)/);

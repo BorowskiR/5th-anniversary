@@ -17,6 +17,8 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+button { font-weight: 500; letter-spacing: 0.08em; }
+
 .surprise {
   position: relative;
   width: 100%;
@@ -59,7 +61,7 @@ body {
 }
 
 .fallback-envelope > span:first-child { font-size: 120px; }
-.fallback-message { color: var(--foreground); font: italic 26px Georgia, serif; white-space: pre-line; }
+.fallback-message { color: var(--foreground); font: 26px Lora, Georgia, serif; white-space: pre-line; }
 
 .date-dialog {
   position: fixed;
@@ -77,6 +79,8 @@ body {
 
 .date-dialog::backdrop { background: #08090dbb; backdrop-filter: blur(8px); }
 .date-dialog form { display: flex; flex-direction: column; }
+.date-dialog-photo { position: relative; width: 100%; height: min(27svh, 220px); margin-bottom: 24px; overflow: hidden; border-radius: 12px; background: #0d0f13; }
+.date-dialog-photo img { object-fit: cover; object-position: 0% 30%; }
 .dialog-close {
   position: absolute;
   top: 10px;
@@ -91,8 +95,7 @@ body {
   cursor: pointer;
 }
 .dialog-close:hover { background: #ffffff0a; color: #fff5dd; }
-.dialog-lock { margin-bottom: 18px; text-align: center; font: 34px Georgia, serif; color: #d3b786; }
-.date-dialog h2 { margin: 0 0 28px; font: normal 31px/1.2 Georgia, serif; text-align: center; letter-spacing: -.5px; }
+.date-dialog h2 { margin: 0 0 28px; font: normal 25px/1.3 Georgia, serif; text-align: center; letter-spacing: -.5px; }
 .date-dialog input {
   width: 100%;
   min-width: 0;
@@ -124,7 +127,7 @@ body {
 }
 .date-submit:hover { background: #8a4057; }
 .date-dialog button:focus-visible, .date-dialog input:focus-visible { outline: 2px solid #d3b786; outline-offset: 3px; }
-@media (max-width: 420px) { .date-dialog { padding: 35px 24px 25px; } .date-dialog h2 { font-size: 28px; } }
+@media (max-width: 420px) { .date-dialog { padding: 35px 24px 25px; } .date-dialog h2 { font-size: 23px; } }
 @media (prefers-reduced-motion: reduce) { .date-submit { transition: none; } }
 
 .letter-close {
@@ -134,6 +137,7 @@ body {
   right: max(20px, env(safe-area-inset-right));
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 13px;
   min-height: 46px;
   padding: 9px 16px;
@@ -146,9 +150,10 @@ body {
   cursor: pointer;
   backdrop-filter: blur(12px);
 }
-.letter-close span { font-size: 25px; line-height: 1; }
+.letter-close span { display: inline-flex; align-items: center; justify-content: center; font-size: 25px; line-height: 1; }
 .letter-close:hover { background: #262027; border-color: #d3b78680; }
 .letter-close:focus-visible { outline: 2px solid #d3b786; outline-offset: 4px; }
+.date-submit, .letter-close { font-weight: 500; letter-spacing: 0.08em; }
 
 .memories-gallery, .gallery-loading {
   display: flex;
@@ -173,6 +178,20 @@ body {
 .memory-date-label { display: block; color: #c6a477; font-size: 12px; letter-spacing: 2px; }
 .memory-date h2 { max-width: 700px; margin: 12px auto 0; padding: 0 10px; color: #f5e8d2; font: normal clamp(20px, 3.2vw, 28px)/1.4 Georgia, serif; text-wrap: pretty; overflow-wrap: anywhere; }
 .memories-swiper .swiper-slide { height: auto; }
+@font-face {
+  font-family: "Lora";
+  src: url("/fonts/Lora-Regular.ttf") format("truetype");
+  font-weight: 400 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Lora";
+  src: url("/fonts/Lora-Italic.ttf") format("truetype");
+  font-weight: 400 700;
+  font-style: italic;
+  font-display: swap;
+}
 @font-face {
   font-family: "Great Vibes";
   src: url("/fonts/GreatVibes-Regular.ttf") format("truetype");

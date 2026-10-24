@@ -8,25 +8,24 @@ import {
   type FormEvent,
 } from "react";
 import * as THREE from "three";
+import Image from "next/image";
 import { createAmbientBackground } from "./ambient-background";
 
 const LETTER_PARAGRAPHS = [
-  "Od 5 lat jesteś moim crushem",
-  "Życzę Ci, aby kolejne lata upływały nam tak jak te które są za nami",
+  "Od pięciu lat jesteś moja, wiem, że zawsze już będziesz ❤️",
+  "Życzę Nam, aby kolejne lata mijały tak cudownie, jak te które są już za nami",
   "Kocham Cię każdego dnia coraz mocniej",
-  "Otwórz schowek w aucie przed sobą",
 ];
-const SIGNATURE = "Twój misiuń 🐻";
-const MESSAGE = [...LETTER_PARAGRAPHS, SIGNATURE].join("\n\n");
+const SIGNATURE = "Twój Rafał 🐻";
+const GREETING = "Karola";
+const RECIPIENT = "Karolina Borowska";
+const MESSAGE = [GREETING, ...LETTER_PARAGRAPHS, SIGNATURE].join("\n\n");
 const smooth = (value: number) => {
   const t = Math.max(0, Math.min(1, value));
   return t * t * (3 - 2 * t);
 };
 
-function paperTexture() {
-  const canvas = document.createElement("canvas");
-  canvas.width = 1024;
-  canvas.height = 1024;
+function drawPaper(canvas: HTMLCanvasElement) {
   const ctx = canvas.getContext("2d")!;
   ctx.fillStyle = "#fff5dd";
   ctx.fillRect(0, 0, 1024, 1024);
@@ -40,11 +39,11 @@ function paperTexture() {
   ctx.strokeRect(78, 78, 868, 868);
   ctx.textAlign = "center";
   ctx.fillStyle = "#000000";
-  ctx.font = "32px Georgia";
-  ctx.fillText("Mój Misiaku", 512, 150);
+  ctx.font = '80px "Great Vibes", cursive';
+  ctx.fillText(GREETING, 512, 150);
   ctx.fillStyle = "#000000";
-  ctx.font = "54px Georgia";
-  let y = 220;
+  ctx.font = "500 54px Lora, Georgia, 'Apple Color Emoji', 'Segoe UI Emoji', serif";
+  let y = 250;
   LETTER_PARAGRAPHS.forEach((paragraph) => {
     let line = "";
     for (const word of paragraph.split(" ")) {
@@ -58,11 +57,19 @@ function paperTexture() {
       }
     }
     ctx.fillText(line, 512, y);
-    y += 84;
+    y += 112;
   });
   ctx.textAlign = "right";
-  ctx.font = "italic 56px Georgia, 'Apple Color Emoji', 'Segoe UI Emoji', serif";
-  ctx.fillText(SIGNATURE, 875, 900);
+  ctx.font =
+    "italic 500 56px Lora, Georgia, 'Apple Color Emoji', 'Segoe UI Emoji', serif";
+  ctx.fillText(SIGNATURE, 875, 920);
+}
+
+function paperTexture() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1024;
+  canvas.height = 1024;
+  drawPaper(canvas);
   const texture = new THREE.CanvasTexture(canvas);
   texture.colorSpace = THREE.SRGBColorSpace;
   return texture;
@@ -337,8 +344,51 @@ export default function Envelope({ onDismiss }: { onDismiss: () => void }) {
       ),
     );
 
+    const recipientCanvas = document.createElement("canvas");
+    recipientCanvas.width = 1024;
+    recipientCanvas.height = 256;
+    const recipientTexture = new THREE.CanvasTexture(recipientCanvas);
+    recipientTexture.colorSpace = THREE.SRGBColorSpace;
+    function drawRecipient() {
+      const ctx = recipientCanvas.getContext("2d")!;
+      ctx.clearRect(0, 0, 1024, 256);
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillStyle = "#000000";
+      ctx.font = '130px "Great Vibes", cursive';
+      ctx.fillText(RECIPIENT, 512, 136, 950);
+      recipientTexture.needsUpdate = true;
+    }
+    drawRecipient();
+    const recipient = new THREE.Mesh(
+      new THREE.PlaneGeometry(3.55, 0.72),
+      new THREE.MeshBasicMaterial({
+        map: recipientTexture,
+        transparent: true,
+        depthWrite: false,
+        toneMapped: false,
+      }),
+    );
+    recipient.position.set(0, -0.91, 0.255);
+    root.add(recipient);
+
     const letter = new THREE.Group();
     const texture = paperTexture();
+    let fontActive = true;
+    void Promise.allSettled([
+      document.fonts.load('80px "Great Vibes"', `${GREETING} ${RECIPIENT}`),
+      document.fonts.load("500 54px Lora", LETTER_PARAGRAPHS.join(" ")),
+      document.fonts.load("italic 500 56px Lora", SIGNATURE),
+    ])
+      .then(() => {
+        if (!fontActive) return;
+        drawPaper(texture.image as HTMLCanvasElement);
+        texture.needsUpdate = true;
+        drawRecipient();
+      })
+      .catch(() => {
+        // Keep the initial font fallbacks if the texture cannot be refreshed.
+      });
     // Hide everything still inside the pouch, including the two rolled edges.
     // The plane follows the envelope's rotation rather than the camera.
     const mouthPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), -1.36);
@@ -709,6 +759,7 @@ export default function Envelope({ onDismiss }: { onDismiss: () => void }) {
     frame = requestAnimationFrame(animate);
     return () => {
       cancelAnimationFrame(frame);
+      fontActive = false;
       observer.disconnect();
       background.dispose();
       canvas.removeEventListener("pointerdown", onDown);
@@ -732,6 +783,7 @@ export default function Envelope({ onDismiss }: { onDismiss: () => void }) {
       geometries.forEach((geometry) => geometry.dispose());
       materials.forEach((material) => material.dispose());
       texture.dispose();
+      recipientTexture.dispose();
       fibres.dispose();
       renderer.dispose();
       renderer.domElement.remove();
@@ -749,10 +801,10 @@ export default function Envelope({ onDismiss }: { onDismiss: () => void }) {
           <button
             type="button"
             className="letter-close"
-            aria-label="Zamknij list i przejdź do galerii zdjęć"
+            aria-label="Idź do galerii zdjęć"
             onClick={onDismiss}
           >
-            ZAMKNIJ LIST <span aria-hidden="true">×</span>
+            IDŹ DO GALERII <span aria-hidden="true">→</span>
           </button>
         )}
         {fallback && (
@@ -791,10 +843,15 @@ export default function Envelope({ onDismiss }: { onDismiss: () => void }) {
             >
               ×
             </button>
-            <span className="dialog-lock" aria-hidden="true">
-              ♡
-            </span>
-            <h2 id="date-question">Od którego dnia liczymy nasz związek?</h2>
+            <div className="date-dialog-photo">
+              <Image
+                src="/gallery/5th-anniversary/20211101_201735.jpg"
+                alt="Nasze wspomnienie z 1 listopada 2021 roku"
+                fill
+                sizes="(max-width: 440px) calc(100vw - 80px), 374px"
+              />
+            </div>
+            <h2 id="date-question">Którego dnia rozpoczął się nasz związek?</h2>
             <input
               ref={dateRef}
               id="anniversary-date"
