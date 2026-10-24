@@ -1,6 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type FormEvent,
+} from "react";
 import * as THREE from "three";
 import { createAmbientBackground } from "./ambient-background";
 
@@ -110,8 +116,8 @@ export default function Envelope() {
     try {
       renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
     } catch {
-      setFallback(true);
-      return;
+      const fallbackFrame = requestAnimationFrame(() => setFallback(true));
+      return () => cancelAnimationFrame(fallbackFrame);
     }
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -120,7 +126,10 @@ export default function Envelope() {
     renderer.localClippingEnabled = true;
     renderer.domElement.tabIndex = 0;
     renderer.domElement.setAttribute("role", "region");
-    renderer.domElement.setAttribute("aria-label", "Koperta 3D. Przeciągnij, aby obrócić. Strzałki obracają, Home przywraca widok z przodu. Kliknij kłódkę lub naciśnij Enter, aby odpowiedzieć na pytanie i otworzyć kopertę. Escape zamyka kopertę.");
+    renderer.domElement.setAttribute(
+      "aria-label",
+      "Koperta 3D. Przeciągnij, aby obrócić. Strzałki obracają, Home przywraca widok z przodu. Kliknij kłódkę lub naciśnij Enter, aby odpowiedzieć na pytanie i otworzyć kopertę. Escape zamyka kopertę.",
+    );
     host.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
@@ -139,11 +148,31 @@ export default function Envelope() {
     root.position.y = 0;
     scene.add(root);
     const background = createAmbientBackground(scene, root);
-    const wine = new THREE.MeshStandardMaterial({ color: "#722d40", roughness: 0.78, side: THREE.DoubleSide });
-    const side = new THREE.MeshStandardMaterial({ color: "#86394d", roughness: 0.85, side: THREE.DoubleSide });
-    const dark = new THREE.MeshStandardMaterial({ color: "#481d2b", roughness: 0.9, side: THREE.DoubleSide });
-    const gold = new THREE.MeshStandardMaterial({ color: "#d9aa5c", metalness: 0.72, roughness: 0.28 });
-    const goldDark = new THREE.MeshStandardMaterial({ color: "#b38237", metalness: 0.6, roughness: 0.35 });
+    const wine = new THREE.MeshStandardMaterial({
+      color: "#722d40",
+      roughness: 0.78,
+      side: THREE.DoubleSide,
+    });
+    const side = new THREE.MeshStandardMaterial({
+      color: "#86394d",
+      roughness: 0.85,
+      side: THREE.DoubleSide,
+    });
+    const dark = new THREE.MeshStandardMaterial({
+      color: "#481d2b",
+      roughness: 0.9,
+      side: THREE.DoubleSide,
+    });
+    const gold = new THREE.MeshStandardMaterial({
+      color: "#d9aa5c",
+      metalness: 0.72,
+      roughness: 0.28,
+    });
+    const goldDark = new THREE.MeshStandardMaterial({
+      color: "#b38237",
+      metalness: 0.6,
+      roughness: 0.35,
+    });
 
     // A procedural fibre texture catches the light as the real mesh rotates.
     const grainCanvas = document.createElement("canvas");
@@ -164,32 +193,53 @@ export default function Envelope() {
       material.bumpScale = 0.018;
     }
 
-    function polygon(points: number[][], material: THREE.Material, z: number, parent = root) {
+    function polygon(
+      points: number[][],
+      material: THREE.Material,
+      z: number,
+      parent = root,
+    ) {
       const shape = new THREE.Shape();
-      points.forEach(([x, y], i) => i === 0 ? shape.moveTo(x, y) : shape.lineTo(x, y));
+      points.forEach(([x, y], i) =>
+        i === 0 ? shape.moveTo(x, y) : shape.lineTo(x, y),
+      );
       shape.closePath();
       const mesh = new THREE.Mesh(new THREE.ShapeGeometry(shape), material);
       mesh.position.z = z;
       parent.add(mesh);
       return mesh;
     }
-    function foldedPaper(shape: THREE.Shape, material: THREE.Material, z: number, parent = root) {
-      const mesh = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, {
-        depth: 0.025,
-        bevelEnabled: true,
-        bevelSize: 0.018,
-        bevelThickness: 0.012,
-        bevelSegments: 3,
-        steps: 1,
-        curveSegments: 20,
-      }), material);
+    function foldedPaper(
+      shape: THREE.Shape,
+      material: THREE.Material,
+      z: number,
+      parent = root,
+    ) {
+      const mesh = new THREE.Mesh(
+        new THREE.ExtrudeGeometry(shape, {
+          depth: 0.025,
+          bevelEnabled: true,
+          bevelSize: 0.018,
+          bevelThickness: 0.012,
+          bevelSegments: 3,
+          steps: 1,
+          curveSegments: 20,
+        }),
+        material,
+      );
       mesh.position.z = z;
       parent.add(mesh);
       return mesh;
     }
-    function foldedTriangle(points: number[][], material: THREE.Material, z: number) {
+    function foldedTriangle(
+      points: number[][],
+      material: THREE.Material,
+      z: number,
+    ) {
       const shape = new THREE.Shape();
-      points.forEach(([x, y], i) => i === 0 ? shape.moveTo(x, y) : shape.lineTo(x, y));
+      points.forEach(([x, y], i) =>
+        i === 0 ? shape.moveTo(x, y) : shape.lineTo(x, y),
+      );
       shape.closePath();
       return foldedPaper(shape, material, z);
     }
@@ -206,16 +256,48 @@ export default function Envelope() {
     foldedPaper(backShape, wine, -0.14);
     // Side gussets and the bottom fold give the pouch an actual open cavity.
     for (const x of [-2.23, 2.23]) {
-      const edge = new THREE.Mesh(new THREE.BoxGeometry(0.035, 2.53, 0.25), wine);
+      const edge = new THREE.Mesh(
+        new THREE.BoxGeometry(0.035, 2.53, 0.25),
+        wine,
+      );
       edge.position.set(x, 0, 0.015);
       root.add(edge);
     }
-    const bottomFold = new THREE.Mesh(new THREE.BoxGeometry(4.39, 0.04, 0.28), wine);
+    const bottomFold = new THREE.Mesh(
+      new THREE.BoxGeometry(4.39, 0.04, 0.28),
+      wine,
+    );
     bottomFold.position.set(0, -1.32, 0.02);
     root.add(bottomFold);
-    foldedTriangle([[-2.23, 1.32], [-2.23, -1.32], [0.38, -0.2]], side, 0.12);
-    foldedTriangle([[2.23, 1.32], [2.23, -1.32], [-0.38, -0.2]], wine, 0.15);
-    foldedTriangle([[-2.23, -1.32], [2.23, -1.32], [0.1, 0.26], [0, 0.29], [-0.1, 0.26]], side, 0.2);
+    foldedTriangle(
+      [
+        [-2.23, 1.32],
+        [-2.23, -1.32],
+        [0.38, -0.2],
+      ],
+      side,
+      0.12,
+    );
+    foldedTriangle(
+      [
+        [2.23, 1.32],
+        [2.23, -1.32],
+        [-0.38, -0.2],
+      ],
+      wine,
+      0.15,
+    );
+    foldedTriangle(
+      [
+        [-2.23, -1.32],
+        [2.23, -1.32],
+        [0.1, 0.26],
+        [0, 0.29],
+        [-0.1, 0.26],
+      ],
+      side,
+      0.2,
+    );
     const flap = new THREE.Group();
     flap.position.set(0, 1.35, -0.09);
     root.add(flap);
@@ -230,15 +312,30 @@ export default function Envelope() {
     for (let i = 0; i < flapVertices.count; i++) {
       // The hinge sits on the back wall; the closed tip rests over the front.
       // Opening then folds the flap behind the emerging sheet, never over it.
-      flapVertices.setZ(i, flapVertices.getZ(i) + Math.max(0, -flapVertices.getY(i)) / 1.65 * 0.43);
+      flapVertices.setZ(
+        i,
+        flapVertices.getZ(i) +
+          (Math.max(0, -flapVertices.getY(i)) / 1.65) * 0.43,
+      );
     }
     flapVertices.needsUpdate = true;
     flapMesh.geometry.computeVertexNormals();
     // A fine gold line follows the folded edge of the envelope.
     const seam = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(-2.2, -1.3, 0.24), new THREE.Vector3(0, 0.27, 0.24), new THREE.Vector3(2.2, -1.3, 0.24),
+      new THREE.Vector3(-2.2, -1.3, 0.24),
+      new THREE.Vector3(0, 0.27, 0.24),
+      new THREE.Vector3(2.2, -1.3, 0.24),
     ]);
-    root.add(new THREE.Line(seam, new THREE.LineBasicMaterial({ color: "#a35c67", transparent: true, opacity: 0.45 })));
+    root.add(
+      new THREE.Line(
+        seam,
+        new THREE.LineBasicMaterial({
+          color: "#a35c67",
+          transparent: true,
+          opacity: 0.45,
+        }),
+      ),
+    );
 
     const letter = new THREE.Group();
     const texture = paperTexture();
@@ -248,7 +345,9 @@ export default function Envelope() {
     const worldMouthPlane = mouthPlane.clone();
     const paperClipping = [worldMouthPlane];
     const paper = new THREE.MeshStandardMaterial({
-      map: texture, roughness: 0.95, side: THREE.DoubleSide,
+      map: texture,
+      roughness: 0.95,
+      side: THREE.DoubleSide,
       clippingPlanes: paperClipping,
     });
     const sheetGeometry = new THREE.PlaneGeometry(3.25, 3.1, 24, 32);
@@ -260,10 +359,15 @@ export default function Envelope() {
     sheetGeometry.computeVertexNormals();
     letter.add(new THREE.Mesh(sheetGeometry, paper));
     const rollMaterial = new THREE.MeshStandardMaterial({
-      color: "#f2dfb8", roughness: 0.85, clippingPlanes: paperClipping,
+      color: "#f2dfb8",
+      roughness: 0.85,
+      clippingPlanes: paperClipping,
     });
     for (const y of [-1.55, 1.55]) {
-      const roll = new THREE.Mesh(new THREE.CylinderGeometry(0.085, 0.085, 3.39, 24), rollMaterial);
+      const roll = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.085, 0.085, 3.39, 24),
+        rollMaterial,
+      );
       roll.rotation.z = Math.PI / 2;
       roll.position.set(0, y, 0.04);
       letter.add(roll);
@@ -284,26 +388,58 @@ export default function Envelope() {
     lockShape.quadraticCurveTo(-0.32, 0.28, -0.32, 0.2);
     lockShape.lineTo(-0.32, -0.15);
     lockShape.quadraticCurveTo(-0.32, -0.23, -0.24, -0.23);
-    const body = new THREE.Mesh(new THREE.ExtrudeGeometry(lockShape, { depth: 0.12, bevelEnabled: true, bevelSize: 0.035, bevelThickness: 0.035, bevelSegments: 3, steps: 1 }), gold);
+    const body = new THREE.Mesh(
+      new THREE.ExtrudeGeometry(lockShape, {
+        depth: 0.12,
+        bevelEnabled: true,
+        bevelSize: 0.035,
+        bevelThickness: 0.035,
+        bevelSegments: 3,
+        steps: 1,
+      }),
+      gold,
+    );
     lock.add(body);
     const shackle = new THREE.Group();
     shackle.position.y = 0.24;
     lock.add(shackle);
-    const arch = new THREE.Mesh(new THREE.TorusGeometry(0.205, 0.043, 12, 32, Math.PI), gold);
+    const arch = new THREE.Mesh(
+      new THREE.TorusGeometry(0.205, 0.043, 12, 32, Math.PI),
+      gold,
+    );
     arch.position.y = 0.19;
     shackle.add(arch);
     for (const x of [-0.205, 0.205]) {
-      const stem = new THREE.Mesh(new THREE.CylinderGeometry(0.043, 0.043, 0.23, 12), goldDark);
+      const stem = new THREE.Mesh(
+        new THREE.CylinderGeometry(0.043, 0.043, 0.23, 12),
+        goldDark,
+      );
       stem.position.set(x, 0.075, 0);
       shackle.add(stem);
     }
     const keyholeMaterial = new THREE.MeshBasicMaterial({ color: "#50331d" });
-    const keyhole = new THREE.Mesh(new THREE.CircleGeometry(0.055, 24), keyholeMaterial);
+    const keyhole = new THREE.Mesh(
+      new THREE.CircleGeometry(0.055, 24),
+      keyholeMaterial,
+    );
     keyhole.position.set(0, 0.055, 0.16);
     lock.add(keyhole);
-    polygon([[-0.025, 0.04], [-0.043, -0.08], [0.043, -0.08], [0.025, 0.04]], keyholeMaterial, 0.161, lock);
+    polygon(
+      [
+        [-0.025, 0.04],
+        [-0.043, -0.08],
+        [0.043, -0.08],
+        [0.025, 0.04],
+      ],
+      keyholeMaterial,
+      0.161,
+      lock,
+    );
     // Invisible generous hit area makes the small lock comfortable on touch screens.
-    const hit = new THREE.Mesh(new THREE.PlaneGeometry(1.1, 1.25), new THREE.MeshBasicMaterial({ visible: false }));
+    const hit = new THREE.Mesh(
+      new THREE.PlaneGeometry(1.1, 1.25),
+      new THREE.MeshBasicMaterial({ visible: false }),
+    );
     hit.position.z = 0.2;
     lock.add(hit);
     const raycaster = new THREE.Raycaster();
@@ -313,14 +449,25 @@ export default function Envelope() {
     const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
     const rotationTarget = new THREE.Vector2(0.18, -0.12);
     const velocity = new THREE.Vector2();
-    const drag = { pointerId: -1, x: 0, y: 0, startX: 0, startY: 0, moved: false };
+    const drag = {
+      pointerId: -1,
+      x: 0,
+      y: 0,
+      startX: 0,
+      startY: 0,
+      moved: false,
+    };
     let returningToFront = false;
     const canvas = renderer.domElement;
     canvas.style.cursor = "grab";
 
     function resetView() {
       // Take the shortest route back, even after several complete turns.
-      root.rotation.y = THREE.MathUtils.euclideanModulo(root.rotation.y + Math.PI, Math.PI * 2) - Math.PI;
+      root.rotation.y =
+        THREE.MathUtils.euclideanModulo(
+          root.rotation.y + Math.PI,
+          Math.PI * 2,
+        ) - Math.PI;
       rotationTarget.set(0, 0);
       velocity.set(0, 0);
       returningToFront = true;
@@ -328,7 +475,10 @@ export default function Envelope() {
 
     function updatePointer(event: PointerEvent) {
       const bounds = canvas.getBoundingClientRect();
-      pointer.set((event.clientX - bounds.left) / bounds.width * 2 - 1, -((event.clientY - bounds.top) / bounds.height) * 2 + 1);
+      pointer.set(
+        ((event.clientX - bounds.left) / bounds.width) * 2 - 1,
+        -((event.clientY - bounds.top) / bounds.height) * 2 + 1,
+      );
       pointerActive = true;
     }
     function updateHover(event: PointerEvent) {
@@ -336,21 +486,24 @@ export default function Envelope() {
       scene.updateMatrixWorld(true);
       raycaster.setFromCamera(pointer, camera);
       // The first visible surface must belong to the lock: no clicking through the back.
-      const intersection = raycaster.intersectObject(root, true).find(({ object }) => {
-        let current: THREE.Object3D | null = object;
-        while (current) {
-          if (!current.visible) return false;
-          current = current.parent;
-        }
-        return true;
-      });
+      const intersection = raycaster
+        .intersectObject(root, true)
+        .find(({ object }) => {
+          let current: THREE.Object3D | null = object;
+          while (current) {
+            if (!current.visible) return false;
+            current = current.parent;
+          }
+          return true;
+        });
       let object: THREE.Object3D | null = intersection?.object ?? null;
       hover = false;
       while (object) {
         if (object === lock && !openedRef.current) hover = true;
         object = object.parent;
       }
-      canvas.style.cursor = drag.pointerId !== -1 ? "grabbing" : hover ? "pointer" : "grab";
+      canvas.style.cursor =
+        drag.pointerId !== -1 ? "grabbing" : hover ? "pointer" : "grab";
     }
     function onDown(event: PointerEvent) {
       if (!event.isPrimary || event.button !== 0) return;
@@ -369,12 +522,23 @@ export default function Envelope() {
     function onMove(event: PointerEvent) {
       updatePointer(event);
       if (drag.pointerId === event.pointerId) {
-        if (Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) > 6) drag.moved = true;
+        if (
+          Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) >
+          6
+        )
+          drag.moved = true;
         if (drag.moved) {
-          const sensitivity = Math.PI * 2 / Math.max(canvas.clientWidth, 320);
-          velocity.set((event.clientX - drag.x) * sensitivity, (event.clientY - drag.y) * sensitivity);
+          const sensitivity = (Math.PI * 2) / Math.max(canvas.clientWidth, 320);
+          velocity.set(
+            (event.clientX - drag.x) * sensitivity,
+            (event.clientY - drag.y) * sensitivity,
+          );
           rotationTarget.x += velocity.x;
-          rotationTarget.y = THREE.MathUtils.clamp(rotationTarget.y + velocity.y, -1.15, 1.15);
+          rotationTarget.y = THREE.MathUtils.clamp(
+            rotationTarget.y + velocity.y,
+            -1.15,
+            1.15,
+          );
           hover = false;
         }
         drag.x = event.clientX;
@@ -388,7 +552,8 @@ export default function Envelope() {
       if (drag.pointerId !== event.pointerId) return;
       const clicked = !drag.moved;
       drag.pointerId = -1;
-      if (canvas.hasPointerCapture(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
+      if (canvas.hasPointerCapture(event.pointerId))
+        canvas.releasePointerCapture(event.pointerId);
       if (clicked) {
         updateHover(event);
         if (hover) {
@@ -411,10 +576,17 @@ export default function Envelope() {
     }
     function onLeave() {
       pointerActive = false;
-      if (drag.pointerId === -1) { hover = false; canvas.style.cursor = "grab"; }
+      if (drag.pointerId === -1) {
+        hover = false;
+        canvas.style.cursor = "grab";
+      }
     }
     function onKey(event: KeyboardEvent) {
-      if (event.key === "Enter" || event.key === " " || event.key === "Escape") {
+      if (
+        event.key === "Enter" ||
+        event.key === " " ||
+        event.key === "Escape"
+      ) {
         event.preventDefault();
         resetView();
         if (event.key === "Escape" || openedRef.current) {
@@ -430,14 +602,19 @@ export default function Envelope() {
         resetView();
         return;
       }
-      if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) return;
+      if (
+        !["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)
+      )
+        return;
       event.preventDefault();
       returningToFront = false;
       velocity.set(0, 0);
       if (event.key === "ArrowLeft") rotationTarget.x -= 0.2;
       if (event.key === "ArrowRight") rotationTarget.x += 0.2;
-      if (event.key === "ArrowUp") rotationTarget.y = Math.max(-1.15, rotationTarget.y - 0.15);
-      if (event.key === "ArrowDown") rotationTarget.y = Math.min(1.15, rotationTarget.y + 0.15);
+      if (event.key === "ArrowUp")
+        rotationTarget.y = Math.max(-1.15, rotationTarget.y - 0.15);
+      if (event.key === "ArrowDown")
+        rotationTarget.y = Math.min(1.15, rotationTarget.y + 0.15);
     }
     canvas.addEventListener("pointerdown", onDown);
     canvas.addEventListener("pointermove", onMove);
@@ -462,7 +639,13 @@ export default function Envelope() {
     function animate(now: number) {
       const dt = Math.min((now - last) / 1000, 0.05);
       last = now;
-      progress = motion.matches ? Number(openedRef.current) : THREE.MathUtils.clamp(progress + (openedRef.current ? dt : -dt) / 3.2, 0, 1);
+      progress = motion.matches
+        ? Number(openedRef.current)
+        : THREE.MathUtils.clamp(
+            progress + (openedRef.current ? dt : -dt) / 3.2,
+            0,
+            1,
+          );
       const unlock = smooth(progress / 0.22);
       const unfold = smooth((progress - 0.12) / 0.4);
       const lift = smooth((progress - 0.52) / 0.3);
@@ -471,7 +654,9 @@ export default function Envelope() {
       lock.position.y = -0.25 - unlock * 0.7;
       lock.position.z = 0.38 + unlock * 0.5;
       lock.rotation.z = -unlock * 0.35;
-      lock.scale.setScalar((1 - smooth((progress - 0.15) / 0.2)) * (hover ? 1.06 : 1));
+      lock.scale.setScalar(
+        (1 - smooth((progress - 0.15) / 0.2)) * (hover ? 1.06 : 1),
+      );
       lock.visible = progress < 0.36;
       shackle.rotation.y = unlock * 0.9;
       shackle.position.y = 0.24 + unlock * 0.12;
@@ -480,19 +665,38 @@ export default function Envelope() {
       // pouch, it moves towards the viewer and gently settles into place.
       // Never scale the sheet: that exposed the rolls before the paper surface.
       letter.visible = progress > 0.52;
-      letter.position.set(0, -0.35 + lift * 3.4 - settle, 0.04 + forward * 0.685);
+      letter.position.set(
+        0,
+        -0.35 + lift * 3.4 - settle,
+        0.04 + forward * 0.685,
+      );
       const clipping = progress < 0.82 ? paperClipping : null;
       paper.clippingPlanes = clipping;
       rollMaterial.clippingPlanes = clipping;
-      root.position.y = -lift * 1.65 + settle * 0.5 + (motion.matches ? 0 : Math.sin(now * 0.0008) * 0.045);
+      root.position.y =
+        -lift * 1.65 +
+        settle * 0.5 +
+        (motion.matches ? 0 : Math.sin(now * 0.0008) * 0.045);
       if (drag.pointerId === -1 && !returningToFront && !motion.matches) {
         rotationTarget.x += velocity.x * dt * 20;
-        rotationTarget.y = THREE.MathUtils.clamp(rotationTarget.y + velocity.y * dt * 20, -1.15, 1.15);
+        rotationTarget.y = THREE.MathUtils.clamp(
+          rotationTarget.y + velocity.y * dt * 20,
+          -1.15,
+          1.15,
+        );
         velocity.multiplyScalar(Math.exp(-dt * 8));
       }
       const damping = motion.matches ? 1 : 1 - Math.exp(-dt * 12);
-      root.rotation.y = THREE.MathUtils.lerp(root.rotation.y, rotationTarget.x, damping);
-      root.rotation.x = THREE.MathUtils.lerp(root.rotation.x, rotationTarget.y, damping);
+      root.rotation.y = THREE.MathUtils.lerp(
+        root.rotation.y,
+        rotationTarget.x,
+        damping,
+      );
+      root.rotation.x = THREE.MathUtils.lerp(
+        root.rotation.x,
+        rotationTarget.y,
+        damping,
+      );
       root.rotation.z = -0.025 * (1 - lift);
       root.updateMatrixWorld(true);
       worldMouthPlane.copy(mouthPlane).applyMatrix4(root.matrixWorld);
@@ -517,7 +721,10 @@ export default function Envelope() {
       scene.traverse((object) => {
         if (object instanceof THREE.Mesh || object instanceof THREE.Line) {
           geometries.add(object.geometry);
-          (Array.isArray(object.material) ? object.material : [object.material]).forEach((material) => materials.add(material));
+          (Array.isArray(object.material)
+            ? object.material
+            : [object.material]
+          ).forEach((material) => materials.add(material));
         }
       });
       geometries.forEach((geometry) => geometry.dispose());
@@ -531,12 +738,15 @@ export default function Envelope() {
 
   return (
     <main>
-      <section className="surprise" aria-label="Interaktywna koperta z niespodzianką">
+      <section
+        className="surprise"
+        aria-label="Interaktywna koperta z niespodzianką"
+      >
         <div ref={mountRef} className="envelope-canvas" />
         {fallback && (
           <button
             className="fallback-envelope"
-            aria-label={opened ? "Zamknij kopertę" : "Otwórz kopertę"}
+            aria-label={opened ? "ZAMKNIJ" : "OTWÓRZ"}
             aria-expanded={opened}
             onClick={() => {
               if (openedRef.current) {
@@ -551,7 +761,9 @@ export default function Envelope() {
             {opened && <span className="fallback-message">{MESSAGE}</span>}
           </button>
         )}
-        <p className="sr-only" aria-live="polite">{opened ? MESSAGE : ""}</p>
+        <p className="sr-only" aria-live="polite">
+          {opened ? MESSAGE : ""}
+        </p>
         <dialog
           ref={dialogRef}
           className="date-dialog"
@@ -560,8 +772,17 @@ export default function Envelope() {
           onClose={() => setQuestionOpen(false)}
         >
           <form onSubmit={submitAnswer}>
-            <button type="button" className="dialog-close" aria-label="Zamknij pytanie" onClick={() => setQuestionOpen(false)}>×</button>
-            <span className="dialog-lock" aria-hidden="true">♡</span>
+            <button
+              type="button"
+              className="dialog-close"
+              aria-label="Zamknij pytanie"
+              onClick={() => setQuestionOpen(false)}
+            >
+              ×
+            </button>
+            <span className="dialog-lock" aria-hidden="true">
+              ♡
+            </span>
             <h2 id="date-question">Od którego dnia liczymy nasz związek?</h2>
             <input
               ref={dateRef}
@@ -577,8 +798,12 @@ export default function Envelope() {
                 setDateError("");
               }}
             />
-            <p id="date-error" className="date-error" role="alert">{dateError}</p>
-            <button type="submit" className="date-submit">Otwórz kopertę</button>
+            <p id="date-error" className="date-error" role="alert">
+              {dateError}
+            </p>
+            <button type="submit" className="date-submit">
+              Otwórz kopertę
+            </button>
           </form>
         </dialog>
       </section>
